@@ -1,0 +1,5 @@
+Django
+Django REST framework
+corsheaders
+psycopg2-binary
+django-environ
