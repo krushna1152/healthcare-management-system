@@ -24,7 +24,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
-    'your_app_name',  # Replace with your actual app
+    'apps.patients',
+    'apps.appointments',
+    'apps.billing',
+    'apps.ai_detection',
 ]
 
 # Middleware
@@ -40,7 +43,7 @@ MIDDLEWARE = [
 ]
 
 # Root URLconf
-ROOT_URLCONF = 'your_project_name.urls'
+ROOT_URLCONF = 'config.urls'
 
 # Templates
 TEMPLATES = [
@@ -60,17 +63,17 @@ TEMPLATES = [
 ]
 
 # WSGI application
-WSGI_APPLICATION = 'your_project_name.wsgi.application'
+WSGI_APPLICATION = 'config.wsgi.application'
 
 # Database
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'your_database_name',
-        'USER': 'your_database_user',
-        'PASSWORD': 'your_database_password',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'healthcare_db',
+        'USER': 'root',
+        'PASSWORD': '',
         'HOST': 'localhost',
-        'PORT': '5432',
+        'PORT': '3306',
     }
 }
 
