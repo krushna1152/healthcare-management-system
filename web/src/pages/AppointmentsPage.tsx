@@ -22,6 +22,8 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: 'bg-red-100 text-red-800',
 };
 
+const STATUS_OPTIONS = ['all', 'scheduled', 'completed', 'cancelled'];
+
 export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,10 +36,15 @@ export default function AppointmentsPage() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
-  const fetchAppointments = async () => {
+  const fetchAppointments = async (q?: string, st?: string) => {
     try {
-      const res = await api.get<Appointment[]>('/appointments/');
+      const params = new URLSearchParams();
+      if (q) params.append('search', q);
+      if (st && st !== 'all') params.append('status', st);
+      const res = await api.get<Appointment[]>(`/appointments/?${params.toString()}`);
       setAppointments(res.data);
     } catch {
       setError('Failed to load appointments.');
@@ -47,8 +54,8 @@ export default function AppointmentsPage() {
   };
 
   useEffect(() => {
-    fetchAppointments();
-  }, []);
+    fetchAppointments(search, statusFilter);
+  }, [search, statusFilter]);
 
   const handleBook = async (e: FormEvent) => {
     e.preventDefault();
@@ -58,7 +65,7 @@ export default function AppointmentsPage() {
       await api.post('/appointments/', form);
       setForm({ patient_name: '', doctor_name: '', appointment_date: '' });
       setShowForm(false);
-      fetchAppointments();
+      fetchAppointments(search, statusFilter);
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { detail?: string } } })?.response?.data
@@ -72,7 +79,7 @@ export default function AppointmentsPage() {
   const handleCancel = async (id: number) => {
     try {
       await api.patch(`/appointments/${id}`, { status: 'cancelled' });
-      fetchAppointments();
+      fetchAppointments(search, statusFilter);
     } catch {
       alert('Failed to cancel appointment.');
     }
@@ -155,6 +162,28 @@ export default function AppointmentsPage() {
         </div>
       )}
 
+      {/* Search & filter bar */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-5">
+        <input
+          type="text"
+          placeholder="Search patient or doctor name…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+        >
+          {STATUS_OPTIONS.map((s) => (
+            <option key={s} value={s}>
+              {s === 'all' ? 'All statuses' : s.charAt(0).toUpperCase() + s.slice(1)}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {/* Appointments list */}
       {loading ? (
         <p className="text-gray-500">Loading…</p>
@@ -163,7 +192,7 @@ export default function AppointmentsPage() {
       ) : appointments.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <div className="text-5xl mb-3">📅</div>
-          <p>No appointments yet. Book your first one!</p>
+          <p>No appointments found. Book your first one!</p>
         </div>
       ) : (
         <div className="space-y-3">

@@ -26,24 +26,28 @@ export default function BillingPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [invoiceSearch, setInvoiceSearch] = useState('');
+
+  const fetchBilling = async (search?: string) => {
+    try {
+      const params = new URLSearchParams();
+      if (search) params.append('search', search);
+      const [inv, pay] = await Promise.all([
+        api.get<Invoice[]>(`/billing/invoices/?${params.toString()}`),
+        api.get<Payment[]>('/billing/payments/'),
+      ]);
+      setInvoices(inv.data);
+      setPayments(pay.data);
+    } catch {
+      setError('Failed to load billing data.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchBilling = async () => {
-      try {
-        const [inv, pay] = await Promise.all([
-          api.get<Invoice[]>('/billing/invoices/'),
-          api.get<Payment[]>('/billing/payments/'),
-        ]);
-        setInvoices(inv.data);
-        setPayments(pay.data);
-      } catch {
-        setError('Failed to load billing data.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchBilling();
-  }, []);
+    fetchBilling(invoiceSearch);
+  }, [invoiceSearch]);
 
   const paidInvoiceIds = new Set(payments.map((p) => p.invoice_id));
 
@@ -94,8 +98,17 @@ export default function BillingPage() {
         <p className="text-red-500">{error}</p>
       ) : (
         <>
-          {/* Invoices table */}
-          <h2 className="text-lg font-semibold text-gray-700 mb-3">Invoices</h2>
+          {/* Invoices */}
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold text-gray-700">Invoices</h2>
+            <input
+              type="text"
+              placeholder="Search invoice number…"
+              value={invoiceSearch}
+              onChange={(e) => setInvoiceSearch(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 w-52"
+            />
+          </div>
           {invoices.length === 0 ? (
             <p className="text-gray-400 mb-8">No invoices found.</p>
           ) : (

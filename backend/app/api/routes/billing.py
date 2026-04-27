@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import Session
@@ -75,10 +75,14 @@ class PaymentResponse(BaseModel):
 
 @router.get("/invoices/", response_model=List[InvoiceResponse])
 def list_invoices(
+    search: Optional[str] = Query(None, description="Search by invoice number"),
     db: Session = Depends(get_db),
     _current_user: User = Depends(_get_current_user),
 ) -> list[InvoiceModel]:
-    return db.query(InvoiceModel).order_by(InvoiceModel.date_issue.desc()).all()
+    q = db.query(InvoiceModel)
+    if search:
+        q = q.filter(InvoiceModel.invoice_number.ilike(f"%{search}%"))
+    return q.order_by(InvoiceModel.date_issue.desc()).all()
 
 
 @router.post("/invoices/", response_model=InvoiceResponse, status_code=status.HTTP_201_CREATED)

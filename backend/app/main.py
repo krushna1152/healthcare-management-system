@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import auth, appointments, billing, ai_detection
+from app.api.routes import notifications, medical_records, doctor
 
 app = FastAPI(title="Healthcare Management System", version="1.0.0")
 
@@ -16,6 +17,9 @@ app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(appointments.router, prefix="/appointments", tags=["appointments"])
 app.include_router(billing.router, prefix="/billing", tags=["billing"])
 app.include_router(ai_detection.router, prefix="/ai", tags=["ai"])
+app.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
+app.include_router(medical_records.router, prefix="/medical-records", tags=["medical-records"])
+app.include_router(doctor.router, prefix="/doctor", tags=["doctor"])
 
 
 @app.get("/")

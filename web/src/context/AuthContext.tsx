@@ -7,11 +7,13 @@ import {
 import type { ReactNode } from 'react';
 import api from '../api/client';
 
-interface User {
+export interface User {
   id: number;
   email: string;
+  full_name: string | null;
   role: string;
   is_active: boolean;
+  email_verified: boolean;
   created_at: string;
 }
 
@@ -19,8 +21,9 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, role?: string) => Promise<void>;
+  register: (email: string, password: string, role?: string, fullName?: string) => Promise<{ verification_token?: string }>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
   loading: boolean;
 }
 
@@ -33,11 +36,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
   const [loading, setLoading] = useState(true);
 
+  const fetchMe = async () => {
+    const res = await api.get<User>('/auth/me');
+    setUser(res.data);
+  };
+
   useEffect(() => {
     if (token) {
-      api
-        .get<User>('/auth/me')
-        .then((res) => setUser(res.data))
+      fetchMe()
         .catch(() => {
           localStorage.removeItem('token');
           setToken(null);
@@ -63,10 +69,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (
     email: string,
     password: string,
-    role = 'patient'
+    role = 'patient',
+    fullName?: string
   ) => {
-    await api.post('/auth/register', { email, password, role });
-    await login(email, password);
+    const res = await api.post<{ access_token: string; verification_token?: string }>(
+      '/auth/register',
+      { email, password, role, full_name: fullName || null }
+    );
+    const { access_token, verification_token } = res.data;
+    localStorage.setItem('token', access_token);
+    setToken(access_token);
+    const me = await api.get<User>('/auth/me');
+    setUser(me.data);
+    return { verification_token };
+  };
+
+  const refreshUser = async () => {
+    await fetchMe();
   };
 
   const logout = () => {
@@ -76,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, register, logout, refreshUser, loading }}>
       {children}
     </AuthContext.Provider>
   );

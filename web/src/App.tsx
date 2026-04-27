@@ -8,6 +8,9 @@ import DashboardPage from './pages/DashboardPage';
 import AppointmentsPage from './pages/AppointmentsPage';
 import BillingPage from './pages/BillingPage';
 import AIDetectionPage from './pages/AIDetectionPage';
+import DoctorDashboardPage from './pages/DoctorDashboardPage';
+import ProfilePage from './pages/ProfilePage';
+import MedicalRecordsPage from './pages/MedicalRecordsPage';
 
 function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -36,6 +39,16 @@ export default function App() {
             }
           />
           <Route
+            path="/doctor-dashboard"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <DoctorDashboardPage />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
+          <Route
             path="/appointments"
             element={
               <PrivateRoute>
@@ -56,11 +69,31 @@ export default function App() {
             }
           />
           <Route
+            path="/medical-records"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <MedicalRecordsPage />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
+          <Route
             path="/ai-detection"
             element={
               <PrivateRoute>
                 <Layout>
                   <AIDetectionPage />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <ProfilePage />
                 </Layout>
               </PrivateRoute>
             }

@@ -7,12 +7,14 @@ export default function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
 
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [role, setRole] = useState<'patient' | 'doctor'>('patient');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [verificationToken, setVerificationToken] = useState('');
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -23,8 +25,12 @@ export default function RegisterPage() {
     }
     setSubmitting(true);
     try {
-      await register(email, password, role);
-      navigate('/dashboard');
+      const result = await register(email, password, role, fullName);
+      if (result.verification_token) {
+        setVerificationToken(result.verification_token);
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { detail?: string } } })?.response?.data
@@ -34,6 +40,29 @@ export default function RegisterPage() {
       setSubmitting(false);
     }
   };
+
+  if (verificationToken) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md text-center">
+          <div className="text-5xl mb-4">📧</div>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">Verify your email</h2>
+          <p className="text-gray-500 text-sm mb-4">
+            Account created! Copy the token below and paste it on the Profile page to verify your email.
+          </p>
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 font-mono text-xs text-gray-700 break-all mb-4">
+            {verificationToken}
+          </div>
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition"
+          >
+            Go to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-4">
@@ -48,6 +77,18 @@ export default function RegisterPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Full Name
+            </label>
+            <input
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="Your full name"
+            />
+          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Email

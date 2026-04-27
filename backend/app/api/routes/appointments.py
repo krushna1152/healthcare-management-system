@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 from sqlalchemy import Column, DateTime, Integer, String
 from sqlalchemy.orm import Session
@@ -54,17 +54,28 @@ class AppointmentResponse(BaseModel):
 
 @router.get("/", response_model=List[AppointmentResponse])
 def list_appointments(
+    search: Optional[str] = Query(None, description="Search patient or doctor name"),
+    appointment_status: Optional[str] = Query(None, alias="status"),
     db: Session = Depends(get_db),
     _current_user: User = Depends(_get_current_user),
 ) -> list[AppointmentModel]:
-    return db.query(AppointmentModel).order_by(AppointmentModel.appointment_date).all()
+    q = db.query(AppointmentModel)
+    if search:
+        like = f"%{search}%"
+        q = q.filter(
+            (AppointmentModel.patient_name.ilike(like))
+            | (AppointmentModel.doctor_name.ilike(like))
+        )
+    if appointment_status:
+        q = q.filter(AppointmentModel.status == appointment_status)
+    return q.order_by(AppointmentModel.appointment_date).all()
 
 
 @router.post("/", response_model=AppointmentResponse, status_code=status.HTTP_201_CREATED)
 def create_appointment(
     payload: AppointmentCreate,
     db: Session = Depends(get_db),
-    _current_user: User = Depends(_get_current_user),
+    current_user: User = Depends(_get_current_user),
 ) -> AppointmentModel:
     appt = AppointmentModel(
         patient_name=payload.patient_name,
@@ -72,6 +83,17 @@ def create_appointment(
         appointment_date=payload.appointment_date,
     )
     db.add(appt)
+    db.flush()  # get appt.id before commit
+
+    # Create an in-app notification reminder for the booking user
+    from app.api.routes.notifications import NotificationModel  # local import to avoid circular
+    notif = NotificationModel(
+        user_id=current_user.id,
+        message=f"Appointment booked with Dr. {payload.doctor_name} on "
+                f"{payload.appointment_date.strftime('%d %b %Y %H:%M')}.",
+        notif_type="appointment_reminder",
+    )
+    db.add(notif)
     db.commit()
     db.refresh(appt)
     return appt
@@ -82,13 +104,21 @@ def update_appointment(
     appointment_id: int,
     payload: AppointmentUpdate,
     db: Session = Depends(get_db),
-    _current_user: User = Depends(_get_current_user),
+    current_user: User = Depends(_get_current_user),
 ) -> AppointmentModel:
     appt = db.query(AppointmentModel).filter(AppointmentModel.id == appointment_id).first()
     if not appt:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Appointment not found")
     if payload.status is not None:
         appt.status = payload.status  # type: ignore[assignment]
+        if payload.status == "cancelled":
+            from app.api.routes.notifications import NotificationModel
+            notif = NotificationModel(
+                user_id=current_user.id,
+                message=f"Appointment with Dr. {appt.doctor_name} has been cancelled.",
+                notif_type="appointment_cancelled",
+            )
+            db.add(notif)
     db.commit()
     db.refresh(appt)
     return appt
