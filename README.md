@@ -102,6 +102,48 @@ curl http://localhost:8000/auth/me \
 
 ---
 
+## Step 2 Setup: React Web Frontend
+
+### Prerequisites
+
+- Node.js 18+
+- npm 9+
+
+---
+
+### 1. Install dependencies
+
+```bash
+cd web
+npm install
+```
+
+### 2. Start the development server
+
+```bash
+# From web/
+npm run dev
+```
+
+The web app will be available at `http://localhost:5173`.  
+It proxies all `/api/*` requests to the FastAPI backend at `http://localhost:8000`.
+
+> **Note:** Make sure the FastAPI backend is running before you open the app.
+
+### 3. Pages
+
+| Route | Description |
+|---|---|
+| `/login` | Sign in with email & password |
+| `/register` | Create a new patient or doctor account |
+| `/dashboard` | Overview of appointments, invoices, and AI scans |
+| `/appointments` | Book and manage appointments |
+| `/billing` | View invoices and payment history |
+| `/ai-detection` | Upload a skin image for AI-powered disease classification |
+
+---
+
+
 ## Contributing
 
 See [backend/README.md](backend/README.md) for backend-specific development instructions.

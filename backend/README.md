@@ -30,9 +30,14 @@ backend/
 │   │   └── auth.py          # Pydantic request/response schemas
 │   └── api/
 │       └── routes/
-│           └── auth.py      # /auth/* endpoints
+│           ├── auth.py          # /auth/* endpoints
+│           ├── appointments.py  # /appointments/* endpoints
+│           ├── billing.py       # /billing/invoices and /billing/payments
+│           └── ai_detection.py  # /ai/detect-skin-disease
 ├── alembic/                 # Alembic migration environment
-│   └── versions/            # Migration scripts
+│   └── versions/
+│       ├── 0001_create_users_table.py
+│       └── 0002_create_appointments_invoices_payments.py
 ├── alembic.ini
 ├── requirements.txt
 ├── .env.example

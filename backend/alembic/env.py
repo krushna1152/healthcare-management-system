@@ -11,6 +11,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from app.core.config import settings
 from app.db.base import Base
 import app.models.user  # noqa: F401 – registers the model
+import app.api.routes.appointments  # noqa: F401 – registers AppointmentModel
+import app.api.routes.billing  # noqa: F401 – registers InvoiceModel, PaymentModel
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
