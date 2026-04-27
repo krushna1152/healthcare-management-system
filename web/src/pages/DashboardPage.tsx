@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
+import api from '../api/client';
 
 const PATIENT_FEATURES = [
   {
@@ -48,6 +50,28 @@ export default function DashboardPage() {
   const isDoctor = user?.role === 'doctor' || user?.role === 'admin';
   const features = isDoctor ? DOCTOR_FEATURES : PATIENT_FEATURES;
 
+  const [stats, setStats] = useState<{ appointments: number; pendingInvoices: number } | null>(null);
+
+  useEffect(() => {
+    Promise.all([
+      api.get<{ id: number }[]>('/appointments/'),
+      api.get<{ id: number }[]>('/billing/invoices/'),
+    ])
+      .then(([appts, invs]) => {
+        setStats({
+          appointments: appts.data.length,
+          pendingInvoices: invs.data.length,
+        });
+      })
+      .catch(() => setStats({ appointments: 0, pendingInvoices: 0 }));
+  }, []);
+
+  const statItems = [
+    { label: 'Total Appointments', value: stats ? String(stats.appointments) : null, icon: '📅' },
+    { label: 'Pending Invoices', value: stats ? String(stats.pendingInvoices) : null, icon: '📄' },
+    { label: 'AI Scans Done', value: '—', icon: '🔬' },
+  ];
+
   return (
     <div className="max-w-5xl mx-auto p-6">
       {/* Email verification banner */}
@@ -77,19 +101,24 @@ export default function DashboardPage() {
 
       {/* Stats row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        {[
-          { label: 'Total Appointments', value: '—', icon: '📅' },
-          { label: 'Pending Invoices', value: '—', icon: '📄' },
-          { label: 'AI Scans Done', value: '—', icon: '🔬' },
-        ].map((stat) => (
+        {statItems.map((stat) => (
           <div
             key={stat.label}
             className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex items-center gap-4"
           >
             <span className="text-3xl">{stat.icon}</span>
             <div>
-              <p className="text-2xl font-bold text-gray-800">{stat.value}</p>
-              <p className="text-xs text-gray-500">{stat.label}</p>
+              {stat.value === null ? (
+                <>
+                  <div className="h-7 w-12 bg-gray-200 rounded animate-pulse mb-1" />
+                  <div className="h-3 w-24 bg-gray-100 rounded animate-pulse" />
+                </>
+              ) : (
+                <>
+                  <p className="text-2xl font-bold text-gray-800">{stat.value}</p>
+                  <p className="text-xs text-gray-500">{stat.label}</p>
+                </>
+              )}
             </div>
           </div>
         ))}

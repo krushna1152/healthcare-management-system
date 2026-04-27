@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
+import toast from 'react-hot-toast';
 import api from '../api/client';
 
 interface Appointment {
@@ -63,6 +64,7 @@ export default function AppointmentsPage() {
     setSubmitting(true);
     try {
       await api.post('/appointments/', form);
+      toast.success('Appointment booked successfully!');
       setForm({ patient_name: '', doctor_name: '', appointment_date: '' });
       setShowForm(false);
       fetchAppointments(search, statusFilter);
@@ -71,6 +73,7 @@ export default function AppointmentsPage() {
         (err as { response?: { data?: { detail?: string } } })?.response?.data
           ?.detail ?? 'Failed to book appointment.';
       setFormError(message);
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }
@@ -79,9 +82,10 @@ export default function AppointmentsPage() {
   const handleCancel = async (id: number) => {
     try {
       await api.patch(`/appointments/${id}`, { status: 'cancelled' });
+      toast.success('Appointment cancelled.');
       fetchAppointments(search, statusFilter);
     } catch {
-      alert('Failed to cancel appointment.');
+      toast.error('Failed to cancel appointment.');
     }
   };
 
